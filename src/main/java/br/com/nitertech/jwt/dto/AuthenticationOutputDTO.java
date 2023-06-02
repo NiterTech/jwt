@@ -1,9 +1,8 @@
-package com.nitertech.jwt.dto;
+package br.com.nitertech.jwt.dto;
 
 import java.util.Set;
 
-import com.nitertech.jwt.entity.Role;
-
+import br.com.nitertech.jwt.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 

@@ -1,4 +1,4 @@
-package com.nitertech.jwt.util;
+package br.com.nitertech.jwt.util;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

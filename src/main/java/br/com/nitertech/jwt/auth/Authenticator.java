@@ -1,7 +1,6 @@
-package com.nitertech.jwt.auth;
+package br.com.nitertech.jwt.auth;
 
-import com.nitertech.jwt.dto.AuthenticationOutputDTO;
-
+import br.com.nitertech.jwt.dto.AuthenticationOutputDTO;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface Authenticator

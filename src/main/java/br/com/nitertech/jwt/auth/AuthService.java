@@ -1,8 +1,4 @@
-package com.nitertech.jwt.auth;
-
-import com.nitertech.jwt.entity.ProtectedRoute;
-import com.nitertech.jwt.entity.Role;
-import com.nitertech.jwt.util.RenewalTokenStore;
+package br.com.nitertech.jwt.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,6 +7,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.http.HttpMethod;
+
+import br.com.nitertech.jwt.entity.ProtectedRoute;
+import br.com.nitertech.jwt.entity.Role;
+import br.com.nitertech.jwt.util.RenewalTokenStore;
 
 public interface AuthService
 {

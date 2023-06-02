@@ -1,4 +1,4 @@
-package com.nitertech.jwt.auth;
+package br.com.nitertech.jwt.auth;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,13 +24,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nitertech.jwt.dto.AuthenticationOutputDTO;
-import com.nitertech.jwt.entity.CustomProtectedRoute;
-import com.nitertech.jwt.entity.ProtectedRoute;
-import com.nitertech.jwt.entity.Role;
-import com.nitertech.jwt.util.RenewalTokenStore;
-import com.nitertech.jwt.util.StringPair;
 
+import br.com.nitertech.jwt.dto.AuthenticationOutputDTO;
+import br.com.nitertech.jwt.entity.CustomProtectedRoute;
+import br.com.nitertech.jwt.entity.ProtectedRoute;
+import br.com.nitertech.jwt.entity.Role;
+import br.com.nitertech.jwt.util.RenewalTokenStore;
+import br.com.nitertech.jwt.util.StringPair;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -88,12 +90,20 @@ public class AuthServiceImpl implements AuthService
 
     private Optional<DecodedJWT> getToken(HttpServletRequest request)
     {
-        String token = request.getHeader("Authorization");
+        String token = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (token.length() == 0 || token.length() < 15)
             return Optional.empty();
 
-        return Optional.of(this.jwtVerifier.verify(request.getHeader("Authorization").split("Bearer ")[1]));
+        try
+        {
+            return Optional.of(this.jwtVerifier.verify(request.getHeader(HttpHeaders.AUTHORIZATION)
+                .split("Bearer ")[1]));
+        }
+        catch (Exception e)
+        {
+            return Optional.empty();
+        }
     }
 
     private StringPair generateTokens(String subject, Set<Role> roles) throws JsonProcessingException,
@@ -208,11 +218,12 @@ public class AuthServiceImpl implements AuthService
 
         try
         {
-            Set<String> roles = this.objMapper.readValue(token.getClaim(ROLES).asString(), Set.class);
+            Set<Role> roles = this.objMapper.readValue(token.getClaim(ROLES).asString(),
+                new TypeReference<Set<Role>>() {});
 
-            for (String reqRole : roles)
+            for (Role reqRole : roles)
                 for (Role allowedRole : route.getAllowedRoles())
-                    if (allowedRole.getAsString().equalsIgnoreCase(reqRole))
+                    if (allowedRole.getName().equalsIgnoreCase(reqRole.getName()))
                         return true;
         }
         catch (Exception e)
@@ -252,8 +263,8 @@ public class AuthServiceImpl implements AuthService
     @Override
     public HttpServletResponse renewToken(HttpServletRequest request, HttpServletResponse response)
     {
-        String auth = request.getHeader("Authorization");
-        if (auth.split("Bearer ").length < 2 || auth.split("Bearer ")[1].length() < 15 ||
+        String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (auth.split("Bearer ").length == 0 || auth.split("Bearer ")[1].length() < 15 ||
             !this.isRenewalTokenValid(auth.split("Bearer ")[1]))
         {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());

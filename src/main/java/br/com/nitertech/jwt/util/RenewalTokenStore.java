@@ -1,4 +1,4 @@
-package com.nitertech.jwt.util;
+package br.com.nitertech.jwt.util;
 
 public interface RenewalTokenStore
 {

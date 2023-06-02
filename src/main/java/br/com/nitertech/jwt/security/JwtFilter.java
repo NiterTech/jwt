@@ -1,11 +1,12 @@
-package com.nitertech.jwt.security;
+package br.com.nitertech.jwt.security;
 
 import java.io.IOException;
 
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.nitertech.jwt.auth.AuthService;
-
+import br.com.nitertech.jwt.auth.AuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,8 +37,20 @@ public class JwtFilter extends OncePerRequestFilter
             return;
         }
 
-        if (this.authService.isRouteProtected(request) && !this.authService.isAllowed(request))
+        try
+        {
+            if (this.authService.isRouteProtected(request) && !this.authService.isAllowed(request))
+            {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
+        }
 
         filterChain.doFilter(request, response);
     }

@@ -1,4 +1,4 @@
-package com.nitertech.jwt.entity;
+package br.com.nitertech.jwt.entity;
 
 import java.util.Set;
 

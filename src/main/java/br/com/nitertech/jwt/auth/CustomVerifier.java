@@ -1,4 +1,4 @@
-package com.nitertech.jwt.auth;
+package br.com.nitertech.jwt.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 

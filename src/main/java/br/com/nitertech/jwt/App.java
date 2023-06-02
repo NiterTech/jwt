@@ -1,4 +1,4 @@
-package com.nitertech.jwt;
+package br.com.nitertech.jwt;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
