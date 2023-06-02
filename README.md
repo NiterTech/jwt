@@ -13,5 +13,5 @@ mvn versions:set `-DnewVersion=VERSION
 Deploy command:
 
 ```sh
-    mvn clean deploy -Prelease
+mvn clean deploy -Prelease
 ```
