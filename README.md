@@ -1,6 +1,6 @@
 # JWT Filter for Spring Security
 
-[![Maven Central](https://img.shields.io/maven-central/v/br.com.nitertech/jwt.svg?label=Maven%20Central)](https://maven-badges.herokuapp.com/maven-central/br.com.nitertech/jwt/)
+[![Maven Central](https://img.shields.io/maven-central/v/br.com.nitertech/jwt.svg?label=Maven%20Central)](https://search.maven.org/artifact/br.com.nitertech/jwt)
 
 ## Version
 
