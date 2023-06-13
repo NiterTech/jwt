@@ -35,21 +35,12 @@ import br.com.nitertech.jwt.util.RenewalTokenStore;
 import br.com.nitertech.jwt.util.StringPair;
 import jakarta.servlet.ServletException;
 
+import static br.com.nitertech.jwt.Constants.*;
+
 @ExtendWith(MockitoExtension.class)
 public class AppTest
 {
-    private String key;
-    private String issuer;
-    private String authRoute;
-    private String renewalRoute;
-    private String noAuthRoute;
-    private String userRestrictedRoute;
-    private String adminRestrictedRoute;
-    private String customRestrictedRoute;
-    private Long tokenDurationMillis;
-    private Long renewalTokenDurationMillis;
     private AuthService authService;
-    private Role user, admin;
 
     private ObjectMapper objMapper = new ObjectMapper();
 
@@ -64,29 +55,16 @@ public class AppTest
     @BeforeEach
     public void setup()
     {
-        this.user = new Role("User");
-        this.admin = new Role("ADMIN");
-        this.key = "testKey";
-        this.issuer = "testIssuer";
-        this.authRoute = "/api/v1.0/auth/login";
-        this.renewalRoute = "/api/v1.0/auth/renew";
-        this.noAuthRoute = "/api/v1.0/noauth";
-        this.userRestrictedRoute = "/api/v1.0/user";
-        this.adminRestrictedRoute = "/api/v1.0/admin";
-        this.customRestrictedRoute = "/api/v1.0/custom";
-        this.tokenDurationMillis = 10L * 1000;
-        this.renewalTokenDurationMillis = 20L * 1000;
+        JWTVerifier verifier = JWT.require(Algorithm.HMAC256(KEY)).withIssuer(ISSUER).build();
 
-        JWTVerifier verifier = JWT.require(Algorithm.HMAC256(key)).withIssuer(this.issuer).build();
-
-        this.authService = new AuthServiceImpl(verifier, authenticator, store, this.key, this.issuer,
-            this.tokenDurationMillis, this.renewalTokenDurationMillis)
-            .setAuthenticationRoute(this.authRoute)
-            .setRenewalRoute(this.renewalRoute)
-            .protectRoute(this.userRestrictedRoute, Set.of(HttpMethod.GET), Set.of(this.user, this.admin))
-            .protectRoute(this.userRestrictedRoute, Set.of(HttpMethod.POST), Set.of(this.admin))
-            .protectRoute(this.adminRestrictedRoute, Set.of(HttpMethod.GET, HttpMethod.POST),
-                Set.of(this.admin));
+        this.authService = new AuthServiceImpl(verifier, authenticator, store, KEY, ISSUER,
+            TOKEN_DURATION_MILLIS, RENEWAL_TOKEN_DURATION_MILLIS)
+            .setAuthenticationRoute(AUTH_ROUTE)
+            .setRenewalRoute(RENEWAL_ROUTE)
+            .protectRoute(USER_RESTRICTED_ROUTE, Set.of(HttpMethod.GET), Set.of(USER_ROLE, ADMIN_ROLE))
+            .protectRoute(USER_RESTRICTED_ROUTE, Set.of(HttpMethod.POST), Set.of(ADMIN_ROLE))
+            .protectRoute(ADMIN_RESTRICTED_ROUTE, Set.of(HttpMethod.GET, HttpMethod.POST),
+                Set.of(ADMIN_ROLE));
 
         this.jwtFilter = new JwtFilter(this.authService);
     }
@@ -99,7 +77,7 @@ public class AppTest
 
         String subject = "test@gmail.com";
 
-        req.setRequestURI(this.authRoute);
+        req.setRequestURI(AUTH_ROUTE);
         req.setMethod(HttpMethod.POST.name());
 
         when(this.authenticator.authenticate(req))
@@ -116,7 +94,7 @@ public class AppTest
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.renewalRoute);
+        req.setRequestURI(RENEWAL_ROUTE);
         req.setMethod(HttpMethod.POST.name());
         req.addHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", renovationToken));
 
@@ -136,11 +114,11 @@ public class AppTest
 
         String subject = "test@gmail.com";
 
-        req.setRequestURI(this.authRoute);
+        req.setRequestURI(AUTH_ROUTE);
         req.setMethod(HttpMethod.GET.name());
 
         when(this.authenticator.authenticate(req))
-            .thenReturn(new AuthenticationOutputDTO(true, subject, Set.of(this.user)));
+            .thenReturn(new AuthenticationOutputDTO(true, subject, Set.of(USER_ROLE)));
 
         this.jwtFilter.doFilter(req, res, filterChain);
 
@@ -153,13 +131,13 @@ public class AppTest
     @Test
     public void shouldRenewToken() throws ServletException, IOException
     {
-        StringPair tokens = this.getTokens(Set.of(this.user));
+        StringPair tokens = this.getTokens(Set.of(USER_ROLE));
 
         MockHttpServletRequest req = new MockHttpServletRequest();
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.renewalRoute);
+        req.setRequestURI(RENEWAL_ROUTE);
         req.setMethod(HttpMethod.GET.name());
         req.addHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", tokens.getSecond()));
 
@@ -180,7 +158,7 @@ public class AppTest
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.noAuthRoute);
+        req.setRequestURI(NO_AUTH_ROUTE);
         req.setMethod(HttpMethod.GET.name());
         req.addHeader(HttpHeaders.AUTHORIZATION, "");
 
@@ -196,7 +174,7 @@ public class AppTest
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.userRestrictedRoute);
+        req.setRequestURI(USER_RESTRICTED_ROUTE);
         req.setMethod(HttpMethod.GET.name());
         req.addHeader(HttpHeaders.AUTHORIZATION, "");
 
@@ -212,11 +190,11 @@ public class AppTest
         MockHttpServletResponse res = new MockHttpServletResponse(), res2 = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain(), filterChain2 = new MockFilterChain();
 
-        StringPair userTokens = this.getTokens(Set.of(this.user));
-        StringPair adminTokens = this.getTokens(Set.of(this.admin));
+        StringPair userTokens = this.getTokens(Set.of(USER_ROLE));
+        StringPair adminTokens = this.getTokens(Set.of(ADMIN_ROLE));
 
-        req.setRequestURI(this.userRestrictedRoute);
-        req2.setRequestURI(this.userRestrictedRoute);
+        req.setRequestURI(USER_RESTRICTED_ROUTE);
+        req2.setRequestURI(USER_RESTRICTED_ROUTE);
 
         req.setMethod(HttpMethod.GET.name());
         req2.setMethod(HttpMethod.GET.name());
@@ -238,11 +216,11 @@ public class AppTest
         MockHttpServletResponse res = new MockHttpServletResponse(), res2 = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain(), filterChain2 = new MockFilterChain();
 
-        StringPair userTokens = this.getTokens(Set.of(this.user));
-        StringPair adminTokens = this.getTokens(Set.of(this.admin));
+        StringPair userTokens = this.getTokens(Set.of(USER_ROLE));
+        StringPair adminTokens = this.getTokens(Set.of(ADMIN_ROLE));
 
-        req.setRequestURI(this.userRestrictedRoute);
-        req2.setRequestURI(this.userRestrictedRoute);
+        req.setRequestURI(USER_RESTRICTED_ROUTE);
+        req2.setRequestURI(USER_RESTRICTED_ROUTE);
 
         req.setMethod(HttpMethod.POST.name());
         req2.setMethod(HttpMethod.POST.name());
@@ -264,11 +242,11 @@ public class AppTest
         MockHttpServletResponse res = new MockHttpServletResponse(), res2 = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain(), filterChain2 = new MockFilterChain();
 
-        StringPair userTokens = this.getTokens(Set.of(this.user));
-        StringPair adminTokens = this.getTokens(Set.of(this.admin));
+        StringPair userTokens = this.getTokens(Set.of(USER_ROLE));
+        StringPair adminTokens = this.getTokens(Set.of(ADMIN_ROLE));
 
-        req.setRequestURI(this.adminRestrictedRoute);
-        req2.setRequestURI(this.adminRestrictedRoute);
+        req.setRequestURI(ADMIN_RESTRICTED_ROUTE);
+        req2.setRequestURI(ADMIN_RESTRICTED_ROUTE);
 
         req.setMethod(HttpMethod.GET.name());
         req2.setMethod(HttpMethod.GET.name());
@@ -286,17 +264,17 @@ public class AppTest
     @Test
     public void shouldNotAllowExpiredTokens() throws ServletException, IOException, InterruptedException
     {
-        StringPair tokens = this.getTokens(Set.of(this.user));
+        StringPair tokens = this.getTokens(Set.of(USER_ROLE));
         
         MockHttpServletRequest req = new MockHttpServletRequest();
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.userRestrictedRoute);
+        req.setRequestURI(USER_RESTRICTED_ROUTE);
         req.setMethod(HttpMethod.GET.name());
         req.addHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", tokens.getFirst()));
 
-        Thread.sleep(this.tokenDurationMillis + 1000);
+        Thread.sleep(TOKEN_DURATION_MILLIS + 1000);
 
         this.jwtFilter.doFilter(req, res, filterChain);
 
@@ -306,13 +284,13 @@ public class AppTest
     @Test
     public void shouldAcceptRenewedToken() throws ServletException, IOException
     {
-        StringPair renewedTokens = this.getRenewedTokens(this.getTokens(Set.of(this.user)).getSecond());
+        StringPair renewedTokens = this.getRenewedTokens(this.getTokens(Set.of(USER_ROLE)).getSecond());
 
         MockHttpServletRequest req = new MockHttpServletRequest();
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.userRestrictedRoute);
+        req.setRequestURI(USER_RESTRICTED_ROUTE);
         req.setMethod(HttpMethod.GET.name());
         req.addHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s",
             renewedTokens.getFirst()));
@@ -325,14 +303,14 @@ public class AppTest
     @Test
     public void shouldProcessCustomProtectedRoutes() throws ServletException, IOException
     {
-        this.authService.protectRoute(this.customRestrictedRoute,
+        this.authService.protectRoute(CUSTOM_RESTRICTED_ROUTE,
             request -> request.getHeader("Is-Allowed").equalsIgnoreCase("yes"));
 
         MockHttpServletRequest req = new MockHttpServletRequest();
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.customRestrictedRoute);
+        req.setRequestURI(CUSTOM_RESTRICTED_ROUTE);
         req.addHeader("Is-Allowed", "yes");
 
         this.jwtFilter.doFilter(req, res, filterChain);
@@ -343,7 +321,7 @@ public class AppTest
         res = new MockHttpServletResponse();
         filterChain = new MockFilterChain();
 
-        req.setRequestURI(this.customRestrictedRoute);
+        req.setRequestURI(CUSTOM_RESTRICTED_ROUTE);
         req.addHeader("Is-Allowed", "no");
 
         this.jwtFilter.doFilter(req, res, filterChain);
